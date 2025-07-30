@@ -21,6 +21,7 @@ use_mount=true
 use_pid=true
 use_net=true
 use_uts=true
+force_resources=false
 
 if [ -t 0 ]; then
   tty=true
@@ -101,6 +102,10 @@ while [ $# -gt 0 ]; do
     ;;
   --no-uts)
     use_uts=false
+    shift
+    ;;
+  --force-resources)
+    force_resources=true
     shift
     ;;
   --)
@@ -200,7 +205,9 @@ resources_json='"resources": {
           "limits":   { "cpu": "'${container_cpu}'", "memory": "'${container_memory}'" },
           "requests": { "cpu": "'${container_cpu}'", "memory": "'${container_memory}'" }
         }'
-$kubectl run --image "$image" "$pod" --dry-run=server 2>&1 | grep -q 'failed quota' || resources_json='"resources": {}'
+if [ "$force_resources" = false ]; then
+  $kubectl run --image "$image" "$pod" --dry-run=server 2>&1 | grep -q 'failed quota' || resources_json='"resources": {}'
+fi
 
 if [ -n "${image_pull_secret_name}" ]; then
   image_pull_secrets='[ { "name": "'${image_pull_secret_name}'" } ]'
